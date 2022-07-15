@@ -1,0 +1,34 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+@import '~antd/dist/antd.css';
+
+/* .ant-menu{
+    font-size: 1.2rem !important;
+    text-align: center;
+} */
+
+.isSelect {
+    border-radius: 1.5rem;
+    background-color: #02a7f0;
+    color: #fff;
+}
+
+#layout .ant-menu-horizontal {
+    display: flex;
+    justify-content: flex-end;
+    padding-right: 100px;
+    align-items: center;
+    font-size: 18px;
+    font-weight: 500;
+}
+
+#layout .ant-menu-submenu-title {
+    display: flex;
+    align-items: center;
+}
+
+#layout .ant-menu-item {
+    display: flex;
+    align-items: center;
+}
