@@ -62,7 +62,10 @@ const Home = () => {
       setCounts([{ address: query.address, id: 1, active: true }]);
     } else {
       setCounts([
-        ...JSON.parse(sessionStorage.getItem('counts')||'[{"address":"0x781229c7a798c33ec788520a6bbe12a79ed657fc","id":1,"active":true}]')
+        ...JSON.parse(
+          sessionStorage.getItem("counts") ||
+            '[{"address":"0x781229c7a798c33ec788520a6bbe12a79ed657fc","id":1,"active":true}]'
+        ),
         // {
         //   address: "0x260ee8f2b0c167e0cd6119b2df923fd061dc1093",
         //   id: 2,
@@ -83,12 +86,12 @@ const Home = () => {
         counts
           .filter(({ active }) => active === true)
           .map(({ address }) =>
-            request({ url: `/history`, params: { address }, method: "GET" })
+            request({ url: `/api/history`, params: { address }, method: "GET" })
           )
       );
       let DATA = results
         //  @ts-ignore
-        .map(({ result }, index: number) =>
+        .map((result, index: number) =>
           Object.entries(result).map(
             ([date, item]: [date: string, item: any]) => ({
               date,
@@ -172,10 +175,10 @@ const Home = () => {
     // smooth: true,
     height: 550,
     autoFit: false,
-    slider:{
-      start:0,
-      end:1000
-    }
+    slider: {
+      start: 0,
+      end: 1000,
+    },
   };
   const changeDate = (tag: string) => {
     setTag(tag);
@@ -310,7 +313,12 @@ const Home = () => {
                     className=" ml-1"
                     onClick={(e) => {
                       e.stopPropagation();
-                      sessionStorage.setItem('counts',JSON.stringify(counts.filter((item, Index) => Index !== index)))
+                      sessionStorage.setItem(
+                        "counts",
+                        JSON.stringify(
+                          counts.filter((item, Index) => Index !== index)
+                        )
+                      );
                       setCounts(
                         counts.filter((item, Index) => Index !== index)
                       );

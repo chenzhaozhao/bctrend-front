@@ -1,7 +1,7 @@
 import { Button, Input, Table, Divider,Tooltip} from "antd";
 import { PlusCircleOutlined,CloseOutlined} from "@ant-design/icons";
 import { useState, useEffect, useMemo,useCallback} from "react";
-import request from "../../../utils/request";
+import request,{ApiRequest} from "../../../utils/request";
 import { formatCount } from "../../../utils";
 interface Count {
   count: string;
@@ -89,13 +89,14 @@ const Home = ({ data }: { data: any[] }) => {
     if(target.value){
       setLoading(true)
       //@ts-ignore
-      const { result } = await request({
-        url: `/`,
+      const result = await request({
+        url: `/api`,
         method: "GET",
         params: {
           address: target.value,
         },
       });
+      console.log(result)
       setLoading(false)
       setConcatData([...concatData, { ...result, address: target.value }]);
     }
@@ -183,7 +184,7 @@ const Home = ({ data }: { data: any[] }) => {
 export async function getStaticProps(context: any) {
   try {
     //@ts-ignore
-    const { result } = await request({
+    const { result } = await ApiRequest({
       url: `/`,
       params: {
         address: "0xceb69f6342ece283b2f5c9088ff249b5d0ae66ea",
