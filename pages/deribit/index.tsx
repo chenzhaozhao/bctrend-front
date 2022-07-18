@@ -61,7 +61,7 @@ const Home = ({dataSource}:{dataSource:[[],[]]}) => {
         }}
         legend={{
           title: {
-            text: "多空比",
+            text: "Long to Short Ratio",
             spacing: 50,
             style: {
               fontSize: 16,
