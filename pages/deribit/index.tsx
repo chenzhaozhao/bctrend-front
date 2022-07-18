@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Line, DualAxes } from "@ant-design/plots";
 import request from "../../utils/request";
 import dayjs from "dayjs";
-const Home = ({dataSource}:{dataSource:[[],[]]}) => {
+const Home = ({ dataSource }: { dataSource: [[], [], []] }) => {
   const [data, setData] = useState<any[]>([[], []]);
   const [range, setRange] = useState([
     { min: 0, max: 100 },
@@ -10,24 +10,34 @@ const Home = ({dataSource}:{dataSource:[[],[]]}) => {
   ]);
   useEffect(() => {
     (async () => {
-      const [data,data1]=dataSource;
-      const ratio = data1?.map((item: any) => ({
-        count: parseFloat(item.ratio),
+      const [data, data1, data2] = dataSource;
+      const allData = [...data, ...data1, ...data2].sort(
+        (a: any, b: any) =>
+          (new Date(a.time) as unknown as number) -
+          (new Date(b.time) as unknown as number)
+      ).map((item:any)=>({...item,time:dayjs(item.time).format('YYYY-MM-DD HH:mm')}))
+      const ratio = allData.map(({ ratio,time}) => ({
+        value: parseFloat(ratio || ""),
         type: "Ratio",
-        time: dayjs(item.time).format("YYYY-MM-DD HH:mm"),
+        time,
       }));
-      const ratio1 = data?.map((item: any) => ({
-        value: parseFloat(item.ratio1),
+      console.log(allData);
+      const ratio1 = allData.map(({ ratio1, time }) => ({
+        value: parseFloat(ratio1 || ""),
         type: "Ratio1",
-        time: dayjs(item.time).format("YYYY-MM-DD HH:mm"),
+        time,
       }));
-      const ratio2 = data?.map((item: any) => ({
-        value: parseFloat(item.ratio2),
+      const ratio2 = allData?.map(({ ratio2, time }) => ({
+        value: parseFloat(ratio2 || ""),
         type: "Ratio2",
-        time: dayjs(item.time).format("YYYY-MM-DD HH:mm"),
+        time,
       }));
-
-      const values = ratio.map(({ count }: { count: number }) => count);
+      const btc = allData.map(({ btc, time }) => ({
+        amount: parseFloat(btc || ""),
+        type: "BTC Price",
+        time,
+      }));
+      const values = ratio.map(({ value }: { value: number }) => value);
       const values1 = [...ratio1, ...ratio2].map(
         ({ value }: { value: number }) => value
       );
@@ -35,9 +45,9 @@ const Home = ({dataSource}:{dataSource:[[],[]]}) => {
         { min: Math.min(...values), max: Math.max(...values) },
         { min: Math.min(...values1), max: Math.max(...values1) },
       ]);
-      setData([ratio, [...ratio1, ...ratio2]]);
+      setData([[...ratio, ...ratio1, ...ratio2], btc]);
     })();
-  }, []); //   //   console.log(data, "9999");
+  }, []);
   return (
     <div
       className=" h-full py-8 px-8 mx-6 my-10 rounded-sm"
@@ -46,16 +56,16 @@ const Home = ({dataSource}:{dataSource:[[],[]]}) => {
       <DualAxes
         data={data}
         xField="time"
-        yField={["count", "value"]}
+        yField={["value", "amount"]}
         yAxis={{
-          count: {
-            title: {
-              text: "Ratio %",
-            },
-          },
           value: {
             title: {
-              text: "Ratio1、Ratio2 %",
+              text: "%",
+            },
+          },
+          amount: {
+            title: {
+              text: "BTC price(USD)",
             },
           },
         }}
@@ -73,12 +83,14 @@ const Home = ({dataSource}:{dataSource:[[],[]]}) => {
           {
             geometry: "line",
             seriesField: "type",
-            ...range[0],
+            connectNulls: true,
+            // ...range[0],
           },
           {
             geometry: "line",
             seriesField: "type",
-            ...range[1],
+            connectNulls: true,
+            // ...range[1],
           },
         ]}
         height={700}
@@ -94,12 +106,19 @@ const Home = ({dataSource}:{dataSource:[[],[]]}) => {
 export async function getServerSideProps() {
   try {
     const data: any = await Promise.all([
-      request({ url: "/deribit?func=24hrvolume" }),
       request({ url: "/deribit?func=openinterest" }),
+      request({ url: "/deribit?func=24hrvolume" }),
+      request({ url: "/deribit?func=price_btceth" }),
     ]);
     return {
       props: {
-        dataSource: data.map(({ result }: { result: any[] }) => result),
+        dataSource: data.map(({ result }: { result: any[] }) =>
+          result.sort(
+            (a: any, b: any) =>
+              (new Date(a.date) as unknown as number) -
+              (new Date(b.date) as unknown as number)
+          )
+        ),
       },
     };
   } catch (error) {
