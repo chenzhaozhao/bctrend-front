@@ -6,6 +6,7 @@ import {
   GlobalOutlined,
   LineChartOutlined,
   TableOutlined,
+  CreditCardOutlined
 } from "@ant-design/icons";
 import { useEffect,useState} from "react";
 const Layout = ({ children }: { children: any }) => {
@@ -22,6 +23,12 @@ const Layout = ({ children }: { children: any }) => {
       icon: <GlobalOutlined />,
       children: [
         {
+          label:'Deribit',
+          key:"deribit",
+          url:"/deribit",
+          icon:<CreditCardOutlined />
+        },
+        {
           label: "Chart",
           key: "chart2",
           url: "/web2/chart",
@@ -32,7 +39,7 @@ const Layout = ({ children }: { children: any }) => {
           key: "project2",
           url: "/web2/project",
           icon: <TableOutlined />,
-        },
+        }
       ],
     },
     {
@@ -61,6 +68,7 @@ const Layout = ({ children }: { children: any }) => {
     "/web2/project": "project2",
     "/web3/chart": "chart3",
     "/web3/project": "project3",
+    "/deribit":"deribit"
   };
   const router = useRouter();
   useEffect(() => {
@@ -75,7 +83,6 @@ const Layout = ({ children }: { children: any }) => {
       router.push(props.url);
     }
   };
-  console.log(keys)
   return (
     <>
       <Head>

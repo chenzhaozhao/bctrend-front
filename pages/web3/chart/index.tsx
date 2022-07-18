@@ -219,6 +219,10 @@ const Home = ({ dataSource, counts }: { dataSource: any[]; counts: any[] }) => {
           ]}
           height={550}
           autoFit={false}
+          slider={{
+            start:0,
+            end:100
+          }}
         />
       ) : (
         <Line {...config}></Line>
@@ -323,7 +327,7 @@ const Home = ({ dataSource, counts }: { dataSource: any[]; counts: any[] }) => {
             defaultValue={compareColum}
             className=" w-80 ml-2"
             style={{ width: "330px" }}
-            onChange={(value) => setCompareColum(value)}
+            onChange={(value) =>{setData([[],[]]);setCompareColum(value)}}
           />
         </div>
       </div>
