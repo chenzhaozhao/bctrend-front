@@ -86,7 +86,7 @@ const Layout = ({ children }: { children: any }) => {
   return (
     <>
       <Head>
-        <title>BCTrade</title>
+        <title>BCtrend</title>
         <link rel="icon" href="/favicon.svg" />
       </Head>
       <main
