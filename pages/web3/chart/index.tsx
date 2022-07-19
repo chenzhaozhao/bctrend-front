@@ -138,8 +138,7 @@ const Home = ({ dataSource, counts }: { dataSource: any[]; counts: any[] }) => {
       min: range.min,
       max: range.max,
     },
-    height: 550,
-    autoFit: false,
+    autoFit: true,
     slider: {
       start: 0,
       end: 1000,
@@ -217,8 +216,7 @@ const Home = ({ dataSource, counts }: { dataSource: any[]; counts: any[] }) => {
               ...otherRange,
             },
           ]}
-          height={550}
-          autoFit={false}
+          autoFit={true}
           slider={{
             start:0,
             end:100

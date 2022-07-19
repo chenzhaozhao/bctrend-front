@@ -1,7 +1,8 @@
 import { useEffect, useState } from "react";
-import { Line, DualAxes } from "@ant-design/plots";
+import {DualAxes } from "@ant-design/plots";
 import request from "../../utils/request";
 import dayjs from "dayjs";
+import { SetByArray } from "../../utils";
 const Home = ({ dataSource }: { dataSource: [[], [], []] }) => {
   const [data, setData] = useState<any[]>([[], []]);
   const [range, setRange] = useState([
@@ -15,37 +16,37 @@ const Home = ({ dataSource }: { dataSource: [[], [], []] }) => {
         (a: any, b: any) =>
           (new Date(a.time) as unknown as number) -
           (new Date(b.time) as unknown as number)
-      ).map((item:any)=>({...item,time:dayjs(item.time).format('YYYY-MM-DD HH:mm')}))
-      const ratio = allData.map(({ ratio,time}) => ({
+      ).map((item:any)=>({...item,time:dayjs(item.time).format('YYYY-MM-DD HH:mm')}));
+      const times=Array.from(new Set(allData.map(({time})=>time)));
+      const ratio = allData.filter(({time,ratio})=>times.includes(time) && ratio).map(({ ratio,time}) => ({
         value: parseFloat(ratio || ""),
         type: "Ratio",
         time,
-      }));
-      console.log(allData);
-      const ratio1 = allData.map(({ ratio1, time }) => ({
+      }))
+      const ratio1 =SetByArray(allData.map(({ ratio1, time }) => ({
         value: parseFloat(ratio1 || ""),
         type: "Ratio1",
         time,
-      }));
-      const ratio2 = allData?.map(({ ratio2, time }) => ({
+      })),'time')
+      const ratio2 = SetByArray(allData.map(({ ratio2, time }) => ({
         value: parseFloat(ratio2 || ""),
         type: "Ratio2",
         time,
-      }));
-      const btc = allData.map(({ btc, time }) => ({
+      })),'time');
+      const btc =SetByArray(allData.map(({ btc, time }) => ({
         amount: parseFloat(btc || ""),
         type: "BTC Price",
         time,
-      }));
-      const values = ratio.map(({ value }: { value: number }) => value);
-      const values1 = [...ratio1, ...ratio2].map(
-        ({ value }: { value: number }) => value
+      })),'time');
+      const values = [...ratio,...ratio1].map(({ value }: { value: number }) => value);
+      const values1 =btc.map(
+        ({  amount}: { amount: number }) => amount
       );
       setRange([
         { min: Math.min(...values), max: Math.max(...values) },
         { min: Math.min(...values1), max: Math.max(...values1) },
       ]);
-      setData([[...ratio, ...ratio1, ...ratio2], btc]);
+      setData([[...ratio1, ...ratio2,...ratio], btc]);
     })();
   }, []);
   return (
@@ -57,6 +58,10 @@ const Home = ({ dataSource }: { dataSource: [[], [], []] }) => {
         data={data}
         xField="time"
         yField={["value", "amount"]}
+        xAxis={{
+          // type:"timeCat",
+          tickInterval:1
+        }}
         yAxis={{
           value: {
             title: {
@@ -84,17 +89,16 @@ const Home = ({ dataSource }: { dataSource: [[], [], []] }) => {
             geometry: "line",
             seriesField: "type",
             connectNulls: true,
-            // ...range[0],
+            ...range[0],
           },
           {
             geometry: "line",
             seriesField: "type",
             connectNulls: true,
-            // ...range[1],
+            ...range[1],
           },
         ]}
-        height={700}
-        autoFit={false}
+        autoFit={true}
         slider={{
           start: 0,
           end: 100,
