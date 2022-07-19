@@ -14,7 +14,7 @@ const Home = () => {
   const config = {
     data: data,
     xField: "time",
-    yField: ["value", "amount"],
+    yField: ["value", "value"], 
     yAxis: {
       value: {
         title: {
@@ -42,7 +42,7 @@ const Home = () => {
         geometry: "line",
         seriesField: "type",
         connectNulls: true,
-        ...range[0],
+        ...range[0],     
       },
       {
         geometry: "line",
@@ -72,7 +72,7 @@ const Home = () => {
         .map((item: any) => ({
           ...item,
           time: dayjs(item.time).format("YYYY-MM-DD HH:mm"),
-        }));
+        })).filter(({time})=>Number(dayjs(time).format('mm'))%15===0);
       const ratio = SetByArray(allData
         .map(({ ratio, time }) => ({
           value: parseFloat(ratio || ""),
@@ -97,7 +97,7 @@ const Home = () => {
       );
       const btc = SetByArray(
         allData.map(({ btc, time }) => ({
-          amount: parseFloat(btc || ""),
+          value: parseFloat(btc || ""),
           type: "BTC Price",
           time,
         })),
