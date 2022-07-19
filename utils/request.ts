@@ -1,6 +1,4 @@
 import axios from "axios";
-const cancelToken = axios.CancelToken
-const source = cancelToken.source()
 const request = axios.create(
     {
         baseURL: 'http://81.68.236.10:10086',
