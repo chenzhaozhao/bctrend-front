@@ -3,15 +3,65 @@ import { DualAxes } from "@ant-design/plots";
 import dayjs from "dayjs";
 import { SetByArray } from "../../utils";
 import axios from "axios";
+import { Spin } from "antd";
 const Home = () => {
   const [data, setData] = useState<any[]>([[], []]);
+  const [loading, setLoading] = useState(false);
   const [range, setRange] = useState([
     { min: 0, max: 100 },
     { min: 0, max: 100 },
   ]);
+  const config = {
+    data: data,
+    xField: "time",
+    yField: ["value", "amount"],
+    yAxis: {
+      value: {
+        title: {
+          text: "%",
+        },
+      },
+      amount: {
+        title: {
+          text: "BTC price(USD)",
+        },
+      },
+    },
+    legend: {
+      title: {
+        text: "Long to Short Ratio",
+        spacing: 50,
+        style: {
+          fontSize: 16,
+          fontWeight: 500,
+        },
+      },
+    },
+    geometryOptions: [
+      {
+        geometry: "line",
+        seriesField: "type",
+        connectNulls: true,
+        ...range[0],
+      },
+      {
+        geometry: "line",
+        seriesField: "type",
+        connectNulls: true,
+        ...range[1],
+      },
+    ],
+    autoFit: true,
+    slider: {
+      start: 0,
+      end: 100,
+    },
+  };
   useEffect(() => {
     (async () => {
-      const {data:dataSource}= await axios({ url: "/api/deribit" });
+      setLoading(true);
+      const { data: dataSource } = await axios({ url: "/api/deribit" });
+      setLoading(false);
       const [data, data1, data2] = dataSource;
       const allData = [...data, ...data1, ...data2]
         .sort(
@@ -23,14 +73,12 @@ const Home = () => {
           ...item,
           time: dayjs(item.time).format("YYYY-MM-DD HH:mm"),
         }));
-      const times = Array.from(new Set(allData.map(({ time }) => time)));
-      const ratio = allData
-        .filter(({ time, ratio }) => times.includes(time) && ratio)
+      const ratio = SetByArray(allData
         .map(({ ratio, time }) => ({
           value: parseFloat(ratio || ""),
           type: "Ratio",
           time,
-        }));
+        })),'time');
       const ratio1 = SetByArray(
         allData.map(({ ratio1, time }) => ({
           value: parseFloat(ratio1 || ""),
@@ -63,7 +111,7 @@ const Home = () => {
         { min: Math.min(...values), max: Math.max(...values) },
         { min: Math.min(...values1), max: Math.max(...values1) },
       ]);
-      setData([[...ratio1, ...ratio2, ...ratio], btc]);
+      setData([[...ratio, ...ratio1, ...ratio2], btc]);
     })();
   }, []);
   return (
@@ -71,58 +119,11 @@ const Home = () => {
       className=" rounded-sm py-5 px-10 m-10"
       style={{ border: "1px solid #333", boxSizing: "border-box" }}
     >
-      <div style={{ height: "50vh" }}>
-        <DualAxes
-          data={data}
-          xField="time"
-          yField={["value", "amount"]}
-          // xAxis={{
-          //   type:"time",
-          //   tickCount:10
-          // }}
-          yAxis={{
-            value: {
-              title: {
-                text: "%",
-              },
-            },
-            amount: {
-              title: {
-                text: "BTC price(USD)",
-              },
-            },
-          }}
-          legend={{
-            title: {
-              text: "Long to Short Ratio",
-              spacing: 50,
-              style: {
-                fontSize: 16,
-                fontWeight: 500,
-              },
-            },
-          }}
-          geometryOptions={[
-            {
-              geometry: "line",
-              seriesField: "type",
-              connectNulls: true,
-              ...range[0],
-            },
-            {
-              geometry: "line",
-              seriesField: "type",
-              connectNulls: true,
-              ...range[1],
-            },
-          ]}
-          autoFit={true}
-          slider={{
-            start: 0,
-            end: 100,
-          }}
-        />
-      </div>
+      <Spin tip="Loading..." spinning={loading}>
+        <div style={{ height: "70vh" }}>
+          <DualAxes {...config} />
+        </div>
+      </Spin>
     </div>
   );
 };

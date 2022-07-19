@@ -1,16 +1,17 @@
-import { Button, Input, Table, Divider,Tooltip} from "antd";
-import { PlusCircleOutlined,CloseOutlined} from "@ant-design/icons";
-import { useState, useEffect, useMemo,useCallback} from "react";
+import { Button, Input, Table, Divider, Tooltip } from "antd";
+import { PlusCircleOutlined, CloseOutlined } from "@ant-design/icons";
+import { useState, useEffect, useMemo, useCallback } from "react";
 import request from "../../../utils/request";
 import { formatCount } from "../../../utils";
-import {useRouter} from 'next/router';
+import { useRouter } from "next/router";
+import axios from "axios";
 interface Count {
   count: string;
   isInput: boolean;
 }
-const Home = ({ data,address }: { data: any[],address:string[] }) => {
+const Home = () => {
   //初始化counts
-  const [counts, setCounts] = useState<Count[]>(address.map((item) => ({ count:item, isInput: false })));
+  const [counts, setCounts] = useState<Count[]>([]);
   const [dataSource, setDataSource] = useState<any[]>([
     {
       id: "total_asset",
@@ -37,23 +38,35 @@ const Home = ({ data,address }: { data: any[],address:string[] }) => {
       title: "7/30/90 Days Activity",
     },
   ]);
-  const {push}=useRouter()
+  const { query, push } = useRouter();
+  const [loading,setLoading]=useState(false)
   const columns = useMemo(() => {
-    const extendCo = counts.filter((item:Count)=>item.count!=='').map((item: Count) => ({
-      title:<Tooltip title={item.count}><a  className=" text-blue-400" href={`./chart?address=${item.count}`}>{formatCount(item.count)}</a></Tooltip>,
-      key: item.count,
-      align:'center',
-      render: (Item: any) => (
-        <span className=" text-black font-semibold ">
-          {Item[item.count] || "0"}
-        </span>
-      ),
-    }));
+    const extendCo = counts
+      .filter((item: Count) => item.count !== "")
+      .map((item: Count) => ({
+        title: (
+          <Tooltip title={item.count}>
+            <a
+              className=" text-blue-400"
+              href={`./chart?address=${item.count}`}
+            >
+              {formatCount(item.count)}
+            </a>
+          </Tooltip>
+        ),
+        key: item.count,
+        align: "center",
+        render: (Item: any) => (
+          <span className=" text-black font-semibold ">
+            {Item[item.count] || "0"}
+          </span>
+        ),
+      }));
     return [
       {
         title: "Address",
         key: "title",
-        align:'center',
+        align: "center",
         render: (item: any) => (
           <span className=" text-black font-semibold">{item.title}</span>
         ),
@@ -61,49 +74,73 @@ const Home = ({ data,address }: { data: any[],address:string[] }) => {
       ...extendCo,
     ];
   }, [counts]);
-  const addCount =useCallback(() => {
+  const addCount = useCallback(() => {
     if (counts.length < 5) {
       setCounts([...counts, { count: "", isInput: false }]);
     }
-  },[counts]);
-
+  }, [counts]);
   useEffect(() => {
-    (() => {
+    (async () => {
+      setLoading(true)
+      const { data } = await axios({
+        url: "/api",
+        params: { address: query.counts },
+      });
+      setLoading(false)
+      setCounts(data.map(({address}:{address:string}) => ({ count: address, isInput: false })))
       setDataSource(
         dataSource?.map((Item) => {
           let keys: { [key: string]: any } = {};
-          data.map((item) => {
+          data.map((item: any) => {
             if (!keys[item.address]) {
-              keys[item.address] = item[Item.id]||0;
+              keys[item.address] = item[Item.id] || 0;
             }
           });
           return { ...Item, ...keys };
         })
       );
     })();
-  }, [data]);
+  }, [query]);
   const getInfoByAddress = async ({ target }: { target: any }) => {
-    if(target.value){
-      push({pathname:'./project',query:{counts:JSON.stringify([...counts.map(item=>item.count),target.value])}})
+    if (target.value) {
+      push({
+        pathname: "./project",
+        query: {
+          counts: JSON.stringify([
+            ...counts.map((item) => item.count),
+            target.value,
+          ]),
+        },
+      });
     }
-    
   };
-  const addCountByBlurOrEnter=useCallback((e:any,index:number)=>{
-    setCounts(
-      counts.map((item: Count, Index: number) => ({
-        ...item,
-        isInput: Index === index ? false : item.isInput,
-        count: Index === index ? e.target.value : item.count,
-      }))
-    );
-    getInfoByAddress(e);
-  },[counts])
-  const deleteCount=useCallback((e:any,index:number)=>{
-        e.stopPropagation();
-        setCounts(
-          counts.filter((item: Count, Index: number) => Index!==index)
-        )
-  },[counts])
+  const addCountByBlurOrEnter = useCallback(
+    (e: any, index: number) => {
+      setCounts(
+        counts.map((item: Count, Index: number) => ({
+          ...item,
+          isInput: Index === index ? false : item.isInput,
+          count: Index === index ? e.target.value : item.count,
+        }))
+      );
+      getInfoByAddress(e);
+    },
+    [counts]
+  );
+  const deleteCount = useCallback(
+    (e: any, index: number) => {
+      e.stopPropagation();
+      setCounts(counts.filter((item: Count, Index: number) => Index !== index));
+      push({
+        pathname: "./project",
+        query: {
+          counts: JSON.stringify(
+            counts.filter((item: Count, Index: number) => Index !== index).map(item=>item.count)),
+        },
+      });
+    },
+    [counts]
+  );
   return (
     <div
       className=" h-full py-8 px-8 mx-6 my-10 rounded-sm"
@@ -116,9 +153,11 @@ const Home = ({ data,address }: { data: any[],address:string[] }) => {
               <Input
                 className=" w-40 mr-1"
                 defaultValue={count.count}
-                onPressEnter={(e)=>addCountByBlurOrEnter(e,index)}
-                onBlur={(e) =>addCountByBlurOrEnter(e,index)}
-                suffix={<CloseOutlined onClick={(e)=>deleteCount(e,index)} />}
+                onPressEnter={(e) => addCountByBlurOrEnter(e, index)}
+                onBlur={(e) => addCountByBlurOrEnter(e, index)}
+                suffix={
+                  <CloseOutlined onClick={(e) => deleteCount(e, index)} />
+                }
               ></Input>
             ) : (
               <div
@@ -134,7 +173,12 @@ const Home = ({ data,address }: { data: any[],address:string[] }) => {
                 }
               >
                 {formatCount(count.count)}
-               {counts.length !== 1 && <CloseOutlined className=" absolute right-1" onClick={(e)=>deleteCount(e,index)} />}
+                {counts.length !== 1 && (
+                  <CloseOutlined
+                    className=" absolute right-1"
+                    onClick={(e) => deleteCount(e, index)}
+                  />
+                )}
               </div>
             )}
             <div className=" ml-1">
@@ -158,34 +202,12 @@ const Home = ({ data,address }: { data: any[],address:string[] }) => {
           // @ts-ignore
           columns={columns}
           pagination={false}
-          // tableLayout="fixed"
+          tableLayout="fixed"
+          loading={loading}
           rowKey="id"
-          
         />
       </div>
     </div>
   );
 };
-export async function getServerSideProps(context: any) {
-  const counts=JSON.parse(context.query.counts||'["0xceb69f6342ece283b2f5c9088ff249b5d0ae66ea"]').filter((count:string)=>count)
-  try {
-    const data = await Promise.all(counts.map((count:string)=>request({
-      url: `/`,
-      params: {
-        address:count,
-      },
-      method: "GET",
-    })));
-    return {
-      props: {
-         data : data.map(({result},index:number)=>({...result,address:counts[index]})),
-         address:counts
-      },
-    };
-  } catch (error) {
-    return {
-      props: { data: [] },
-    };
-  }
-}
 export default Home;

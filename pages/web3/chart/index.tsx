@@ -52,7 +52,7 @@ const Home = ({ dataSource, counts }: { dataSource: any[]; counts: any[] }) => {
   ]);
   const [chartColum, setChartColum] = useState("total_asset");
   const [compareColum, setCompareColum] = useState("");
-  const { query, push } = useRouter();
+  const {push } = useRouter();
   const [range, setRange] = useState({ min: 0, max: 100 });
   const [otherRange, setOtherRange] = useState({ min: 0, max: 100 });
   useEffect(() => {
@@ -166,9 +166,10 @@ const Home = ({ dataSource, counts }: { dataSource: any[]; counts: any[] }) => {
     }
   };
   return (
+    <div  className=" rounded-sm py-5 px-10 m-10"
+    style={{ border: "1px solid #333", boxSizing: "border-box" }}>
     <div
-      className=" h-full p-4 px-9 pb-8 m-8"
-      style={{ border: "1px solid #333" }}
+      style={{height:'70vh' }}
     >
       <div className=" text-center w-full text-xl mb-3">{title}</div>
       <div className=" flex justify-between mb-3">
@@ -329,6 +330,7 @@ const Home = ({ dataSource, counts }: { dataSource: any[]; counts: any[] }) => {
           />
         </div>
       </div>
+    </div>
     </div>
   );
 };
