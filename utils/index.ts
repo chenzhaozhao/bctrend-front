@@ -18,14 +18,14 @@ function formatCount(str: string) {
  * 
  * 
  */
-function SetByArray(array: { [key: string]: string | number }[], name: string) {
+function SetByArray(array: { [key: string]: string | number }[], name: string,key:string) {
     // console.log(array)
     let result: { [key: string]: any } = {};
     for (let i = 0; i < array.length; i++) {
         if (!result[array[i][name]]) {
             result[array[i][name]] =array[i]
         }else{
-           if(array[i].value){
+           if(array[i][key]){
             result[array[i][name]] = array[i]
            } 
         }

@@ -14,7 +14,7 @@ const Home = () => {
   const config = {
     data: data,
     xField: "time",
-    yField: ["value", "value"], 
+    yField: ["value", "amount"], 
     yAxis: {
       value: {
         title: {
@@ -78,14 +78,14 @@ const Home = () => {
           value: parseFloat(ratio || ""),
           type: "Ratio",
           time,
-        })),'time');
+        })),'time','value');
       const ratio1 = SetByArray(
         allData.map(({ ratio1, time }) => ({
           value: parseFloat(ratio1 || ""),
           type: "Ratio1",
           time,
         })),
-        "time"
+        "time",'value'
       );
       const ratio2 = SetByArray(
         allData.map(({ ratio2, time }) => ({
@@ -93,15 +93,15 @@ const Home = () => {
           type: "Ratio2",
           time,
         })),
-        "time"
+        "time",'value'
       );
       const btc = SetByArray(
         allData.map(({ btc, time }) => ({
-          value: parseFloat(btc || ""),
+          amount: parseFloat(btc || ""),
           type: "BTC Price",
           time,
         })),
-        "time"
+        "time",'amount'
       );
       const values = [...ratio, ...ratio1].map(
         ({ value }: { value: number }) => value
