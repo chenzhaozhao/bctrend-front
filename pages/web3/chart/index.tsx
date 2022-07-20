@@ -166,11 +166,8 @@ const Home = ({ dataSource, counts }: { dataSource: any[]; counts: any[] }) => {
     }
   };
   return (
-    <div  className=" rounded-sm py-5 px-10 m-10"
+    <div  className=" rounded-sm py-10 px-10 m-10"
     style={{ border: "1px solid #333", boxSizing: "border-box" }}>
-    <div
-      style={{height:'70vh' }}
-    >
       <div className=" text-center w-full text-xl mb-3">{title}</div>
       <div className=" flex justify-between mb-3">
         <div className=" flex text-center w-80 justify-between">
@@ -226,7 +223,7 @@ const Home = ({ dataSource, counts }: { dataSource: any[]; counts: any[] }) => {
       ) : (
         <Line {...config}></Line>
       )}
-      <div className=" mt-8 ml-8 flex">
+      <div className=" mt-10 ml-8 flex">
         <AutoComplete
           className=" w-40  mr-6"
           allowClear
@@ -300,7 +297,7 @@ const Home = ({ dataSource, counts }: { dataSource: any[]; counts: any[] }) => {
           ></Button>
         ))}
       </div>
-      <div className=" flex justify-between mt-10 px-8">
+      <div className="justify-between mt-10 px-8 md:flex">
         <div className=" flex items-center">
           <div>Chart:</div>
           <Select
@@ -330,7 +327,6 @@ const Home = ({ dataSource, counts }: { dataSource: any[]; counts: any[] }) => {
           />
         </div>
       </div>
-    </div>
     </div>
   );
 };
