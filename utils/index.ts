@@ -32,7 +32,10 @@ function SetByArray(array: { [key: string]: string | number }[], name: string,ke
     }
     return Object.values(result)
 }
+const sortRule = (a: any, b: any) =>
+  (new Date(a) as unknown as number) - (new Date(b) as unknown as number);
 export {
     formatCount,
-    SetByArray
+    SetByArray,
+    sortRule
 }

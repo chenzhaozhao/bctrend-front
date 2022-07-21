@@ -3,21 +3,21 @@ import dayjs from "dayjs";
 import axios from "axios";
 import { Spin } from "antd";
 import * as echarts from "echarts";
-const sortRule = (a: any, b: any) =>
-  (new Date(a) as unknown as number) - (new Date(b) as unknown as number);
+import { sortRule } from "../../utils";
 const Home = () => {
   const [loading, setLoading] = useState(false);
+  const plot=useRef(null);
   useEffect(() => {
     (async () => {
       setLoading(true);
-      var chartDom = document.getElementById("plot") as HTMLElement;
+      var chartDom = plot.current as unknown as HTMLElement;
       var myChart = echarts.init(chartDom);
       const { data: dataSource } = await axios({ url: "/api/deribit" });
       setLoading(false);
       //所有数据
       let [data, data1, data2] = dataSource;
       // x轴上时间集合
-      const times = Array.from(
+      const times: string[] = Array.from(
         new Set(
           dataSource
             .flat()
@@ -30,63 +30,26 @@ const Home = () => {
             .sort(sortRule)
         )
       );
-      const ratio = times.map((time) => {
-        const raTime: string[] = data
-          .map(({ time, ratio }: { time: string; ratio: string }) => ({
-            time: dayjs(time).format("YYYY-MM-DD HH:mm"),
-            ratio,
-          }))
-          .map(({ time }: { time: string }) => time);
-        const Index = raTime.indexOf(time as string);
-        let value: number = null as unknown as number;
-        if (Index >= 0) {
-          value = parseFloat(data[Index].ratio || "");
-        }
-        return value;
-      });
-      const ratio1 = times.map((time) => {
-        const raTime: string[] = data1
-          .map(({ time, ratio }: { time: string; ratio: string }) => ({
-            time: dayjs(time).format("YYYY-MM-DD HH:mm"),
-            ratio,
-          }))
-          .map(({ time }: { time: string }) => time);
-        const Index = raTime.indexOf(time as string);
-        let value: number = null as unknown as number;
-        if (Index >= 0) {
-          value = parseFloat(data1[Index].ratio1 || "");
-        }
-        return value;
-      });
-      const ratio2 = times.map((time) => {
-        const raTime: string[] = data1
-          .map(({ time, ratio }: { time: string; ratio: string }) => ({
-            time: dayjs(time).format("YYYY-MM-DD HH:mm"),
-            ratio,
-          }))
-          .map(({ time }: { time: string }) => time);
-        const Index = raTime.indexOf(time as string);
-        let value: number = null as unknown as number;
-        if (Index >= 0) {
-          value = parseFloat(data1[Index].ratio2 || "");
-        }
-        return value;
-      });
-      const btc = times.map((time) => {
-        const raTime: string[] = data2
-          .map(({ time, ratio }: { time: string; ratio: string }) => ({
-            time: dayjs(time).format("YYYY-MM-DD HH:mm"),
-            ratio,
-          }))
-          .map(({ time }: { time: string }) => time);
-        const Index = raTime.indexOf(time as string);
-        let value: number = null as unknown as number;
-        if (Index >= 0) {
-          value = parseFloat(data2[Index].btc || "");
-        }
-        return value;
-      });
-
+      const dealData = (times: string[], data: any[], key: string) => {
+        return times.map((time) => {
+          const raTime: string[] = data
+            .map(({ time, ratio }: { time: string; ratio: string }) => ({
+              time: dayjs(time).format("YYYY-MM-DD HH:mm"),
+              ratio,
+            }))
+            .map(({ time }: { time: string }) => time);
+          const Index = raTime.indexOf(time as string);
+          let value: number = null as unknown as number;
+          if (Index >= 0) {
+            value = parseFloat(data[Index][key] || "");
+          }
+          return value;
+        });
+      };
+      const ratio = dealData(times, data, "ratio");
+      const ratio1 = dealData(times, data1, "ratio1");
+      const ratio2 = dealData(times, data1, "ratio2");
+      const btc = dealData(times, data2, "btc");
       var option;
       const ratioMin = Math.min(
         ...[...ratio, ...ratio1, ...ratio2].filter((num) => num)
@@ -96,7 +59,6 @@ const Home = () => {
         ...[...ratio, ...ratio1, ...ratio2].filter((num) => num)
       );
       const priceMax = Math.max(...btc.filter((num) => num));
-      console.log(ratioMin, priceMax, "999999");
       option = {
         title: {
           text: "Long to Short Ratio",
@@ -149,7 +111,6 @@ const Home = () => {
             type: "value",
             axisLabel: {
               formatter: function (value: number) {
-                console.log(value);
                 return value / 1000 + "k USD";
               },
             },
@@ -212,7 +173,7 @@ const Home = () => {
         className="rounded py-6 mx-6 mt-6"
         style={{ border: "1px solid #333" }}
       >
-        <div id="plot" className=" w-full" style={{ height: "80vh" }}></div>
+        <div id="plot" className=" w-full" style={{ height: "80vh" }} ref={plot}></div>
       </div>
     </Spin>
   );
