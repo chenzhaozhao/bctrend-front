@@ -34,8 +34,10 @@ function SetByArray(array: { [key: string]: string | number }[], name: string,ke
 }
 const sortRule = (a: any, b: any) =>
   (new Date(a) as unknown as number) - (new Date(b) as unknown as number);
+const tags=["7D", "1M", "3M", "6M", "1Y", "All"]
 export {
     formatCount,
     SetByArray,
-    sortRule
+    sortRule,
+    tags
 }

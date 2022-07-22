@@ -1,14 +1,13 @@
 import { Button, DatePicker, Select, Spin, AutoComplete, Tooltip } from "antd";
-import { useState, useEffect } from "react";
-import { Line, DualAxes } from "@ant-design/plots";
+import { useState, useEffect, useRef } from "react";
 import dayjs from "dayjs";
-import { formatCount } from "../../../utils";
+import { formatCount,tags} from "../../../utils";
 import { CloseOutlined } from "@ant-design/icons";
-import request from "../../../utils/request";
-import { useRouter } from "next/router";
 import moment from "moment";
-const Home = ({ dataSource, counts }: { dataSource: any[]; counts: any[] }) => {
-  const tags = ["7D", "1M", "3M", "6M", "1Y", "All"];
+import * as echarts from "echarts";
+import axios from "axios";
+const Home = () => {
+ 
   const chartOptions = [
     {
       label: "Total assets",
@@ -44,106 +43,190 @@ const Home = ({ dataSource, counts }: { dataSource: any[]; counts: any[] }) => {
     stable_coin: "Stable Coin",
   };
   const [data, setData] = useState<any[]>([]);
-  const [tag, setTag] = useState("1Y");
-  const [title, setTitle] = useState<string>();
+  const [tag, setTag] = useState("7D");
   const [date, setDate] = useState<[string, string]>([
-    dayjs().subtract(1, "years").format("YYYY/MM/DD"),
+    dayjs().subtract(7, "day").format("YYYY/MM/DD"),
     dayjs().format("YYYY/MM/DD"),
   ]);
   const [chartColum, setChartColum] = useState("total_asset");
   const [compareColum, setCompareColum] = useState("");
-  const {push } = useRouter();
-  const [range, setRange] = useState({ min: 0, max: 100 });
-  const [otherRange, setOtherRange] = useState({ min: 0, max: 100 });
+  const [account, setAccount] = useState([
+    {
+      address: "0xceb69f6342ece283b2f5c9088ff249b5d0ae66ea",
+      active: true,
+      id: 0,
+    },
+    // {
+    //   address: "0x781229c7a798c33ec788520a6bbe12a79ed657fc",
+    //   active: true,
+    //   id: 2,
+    // },
+  ]);
+  const [loading, setLoading] = useState(false);
+  const plot = useRef(null);
   useEffect(() => {
     (async () => {
-      let DATA = dataSource
-        .map((result, index: number) =>
-          Object.entries(result).map(
-            ([date, item]: [date: string, item: any]) => ({
-              date,
-              ...item,
-              address: counts.filter(({ active }) => active === true)[index]
-                .address,
-            })
-          )
+      setLoading(true);
+      let data: any[] = await Promise.all(
+        account.map(({ address }) =>
+          axios({ url: "/api/history", params: { address } })
         )
-        .flat()
-        .sort(
-          (a: any, b: any) =>
-            (new Date(a.date) as unknown as number) -
-            (new Date(b.date) as unknown as number)
-        );
-      const titleAccount = counts
-        .map((count) => formatCount(count.address))
-        .join(",");
-      if (chartColum && compareColum) {
-        setTitle(
-          `${titleAccount} ${titles[chartColum]} vs. ${titles[compareColum]}`
-        );
-        const data1 = DATA.map((item: any) => ({
-          date: item.date,
-          value: parseFloat(item[chartColum as string]) || 0,
-          type: `${formatCount(item.address)} ${titles[chartColum]}`,
-        }));
-        const data2 = DATA.map((item: any) => ({
-          date: item.date,
-          count: parseFloat(item[compareColum as string]) || 0,
-          type: `${formatCount(item.address)} ${titles[compareColum]}`,
-        }));
-        const values1 = data1.map(({ value }) => value);
-        const values2 = data2.map(({ count }) => count);
-        setRange({ min: Math.min(...values1), max: Math.max(...values1) });
-        setOtherRange({ min: Math.min(...values2), max: Math.max(...values2) });
-        return setData([data1, data2]);
-      }
-      if (chartColum) {
-        setTitle(`${titleAccount} ${titles[chartColum]} historical chart`);
-        let resultData = DATA.map((item: any) => ({
-          date: item.date,
-          value: parseFloat(item[chartColum as string]) || 0,
-          type: `${formatCount(item.address)} ${titles[chartColum]}`,
-        }));
-        const values = resultData.map(({ value }) => value);
-        const min = Math.min(...values);
-        const max = Math.max(...values);
-        setRange({ min, max });
-        return setData(resultData);
-      }
-      if (compareColum) {
-        setTitle(`${titleAccount} ${titles[compareColum]} historical chart`);
-        let resultData = DATA.map((item: any) => ({
-          date: item.date,
-          value: parseFloat(item[compareColum as string]) || 0,
-          type: `${formatCount(item.address)} ${titles[compareColum]}`,
-        }));
-        const values = resultData.map(({ value }) => value);
-        const min = Math.min(...values);
-        const max = Math.max(...values);
-        setRange({ min, max });
-        return setData(resultData);
-      }
+      );
+      setLoading(false);
+      data = data.map(({ data }) =>
+        Object.entries(data).map(
+          ([key, value]: [key: string, value: any]) => ({ ...value, date: key })
+        )
+      );
+      setData(data);
     })();
-  }, [chartColum, compareColum, dataSource, counts]);
-  const config = {
-    data,
-    xField: "date",
-    yField: "value",
-    seriesField: "type",
-    xAxis: {
-      nice: true,
-      tickCount: 20,
-    },
-    yAxis: {
-      min: range.min,
-      max: range.max,
-    },
-    autoFit: true,
-    slider: {
-      start: 0,
-      end: 1000,
-    },
-  };
+  }, [account]);
+  useEffect(() => {
+    var chartDom = plot.current as unknown as HTMLElement;
+    var myChart = echarts.init(chartDom);
+    const startDate = date[0];
+    if (data.length > 0) {
+      const times = data[0]
+        .map(({ date }: { date: string }) => date)
+        .filter((date: string) => new Date(date) >= new Date(startDate));
+      let title = "";
+      let yAxis = [];
+      let series: any[] = [];
+      if (chartColum && compareColum) {
+        title = `${account
+          .map(({ address }) => formatCount(address))
+          .join("、")} ${titles[chartColum]} vs. ${titles[compareColum]}`;
+        yAxis = [
+          {
+            type: "value",
+            name: "",
+            nameTextStyle: {
+              align: "right",
+            },
+            axisLabel: {
+              formatter: "{value}",
+            },
+          },
+          {
+            type: "value",
+            name: "",
+            nameTextStyle: {
+              align: "right",
+            },
+            axisLabel: {
+              formatter: "{value}",
+            },
+          },
+        ];
+        series = [
+          ...data.map((item, index) => {
+            return {
+              name: `${formatCount(account[index].address)} ${
+                titles[chartColum]
+              }`,
+              type: "line",
+              data: item.map((serie: any) => parseFloat(serie[chartColum])),
+              yAxisIndex: 0,
+              symbol: "none",
+              connectNulls: true,
+              smooth: true,
+            };
+          }),
+          ...data.map((item, index) => {
+            return {
+              name: `${formatCount(account[index].address)} ${
+                titles[compareColum]
+              }`,
+              type: "line",
+              data: item.map((serie: any) => parseFloat(serie[compareColum])),
+              yAxisIndex: 1,
+              symbol: "none",
+              connectNulls: true,
+              smooth: true,
+            };
+          }),
+        ];
+      } else {
+        title = `${account
+          .map(({ address }) => formatCount(address))
+          .join("、")} ${titles[chartColum] || ""}  ${
+          titles[compareColum] || ""
+        }`;
+        yAxis = [
+          {
+            type: "value",
+            name: "",
+            nameTextStyle: {
+              align: "right",
+            },
+            axisLabel: {
+              formatter: "{value}",
+            },
+          },
+        ];
+        series = data.map((item, index) => {
+          return {
+            name: `${formatCount(account[index].address)} ${
+              titles[chartColum || compareColum]
+            }`,
+            type: "line",
+            data: item.map((serie: any) =>
+              parseFloat(serie[chartColum || compareColum])
+            ),
+            yAxisIndex: 0,
+            symbol: "none",
+            connectNulls: true,
+            smooth: true,
+          };
+        });
+      }
+      var option = {
+        title: {
+          text: title,
+          textStyle: {},
+          x: "center",
+          y: "top",
+        },
+        tooltip: {
+          trigger: "axis",
+        },
+        legend: {
+          top: "40px",
+        },
+        dataZoom: [
+          {
+            type: "slider",
+            show: true,
+            xAxisIndex: [0],
+            start: 0, // 滚动条的起始位置（10%）
+            end: 100, // 滚动条的
+          },
+        ],
+        grid: {
+          top: "100px",
+          left: "100px",
+          right: "100px",
+        },
+        xAxis: {
+          type: "category",
+          boundaryGap: false,
+          data: times,
+          axisLabel: {
+            formatter: "{value}",
+          },
+        },
+        yAxis,
+        series,
+      };
+      myChart.setOption(option,true);
+    }
+    addEventListener("resize", () => {
+      myChart.resize();
+    });
+    return () => {
+      removeEventListener("resize", () => {});
+    };
+  }, [data, chartColum, compareColum, date]);
   const changeDate = (tag: string) => {
     setTag(tag);
     const now = dayjs().format("YYYY/MM/DD");
@@ -166,197 +249,141 @@ const Home = ({ dataSource, counts }: { dataSource: any[]; counts: any[] }) => {
     }
   };
   return (
-    <div  className=" rounded-sm py-10 px-10 m-10"
-    style={{ border: "1px solid #333", boxSizing: "border-box" }}>
-      <div className=" text-center w-full text-xl mb-3">{title}</div>
-      <div className=" flex justify-between mb-3">
-        <div className=" flex text-center w-80 justify-between">
-          {tags.map((item) => (
-            <div
-              className=" w-10 rounded-sm flex justify-center items-center"
+    <div
+      className=" rounded pt-6 px-8 m-8 pb-12"
+      style={{ border: "1px solid #333", boxSizing: "border-box" }}
+    >
+      <Spin spinning={loading}>
+        <div className=" flex justify-between mb-3 mx-10">
+          <div className=" flex text-center w-80 justify-between">
+            {tags.map((item) => (
+              <div
+                className=" w-10 rounded-sm flex justify-center items-center"
+                style={{
+                  background: item === tag ? "#1890ff" : "#fff",
+                  color: item === tag ? "#fff" : "#333",
+                }}
+                key={item}
+                onClick={() => changeDate(item)}
+              >
+                {item}
+              </div>
+            ))}
+          </div>
+          <div>
+            <DatePicker.RangePicker
+              value={[moment(date[0]), moment(date[1])]}
+              onChange={(e: any) =>
+                setDate([
+                  dayjs(e[0] as unknown as string).format("YYYY/MM/DD"),
+                  dayjs(e[1] as unknown as string).format("YYYY/MM/DD"),
+                ])
+              }
+            />
+          </div>
+        </div>
+        <div ref={plot} style={{ height: "50vh" }}></div>
+        <div className=" mt-10 ml-8 flex">
+          <AutoComplete
+            className=" w-40  mr-6"
+            allowClear
+            placeholder="Search"
+            options={[]}
+            onBlur={({ target }: { target: any }) => {
+              const value = target.value;
+              const values = account.map(({ address }) => address);
+              if (!values.includes(value) && value) {
+                setAccount([
+                  ...account,
+                  {
+                    address: target.value,
+                    id: account.length,
+                    active: true,
+                  },
+                ]);
+                sessionStorage.setItem('account',JSON.stringify([ ...account,
+                  {
+                    address: target.value,
+                    id: account.length,
+                    active: true,
+                  },]))
+              }
+            }}
+          ></AutoComplete>
+          {account.map((count, index) => (
+            <Button
+              key={count.id}
+              type="text"
+              className=" mr-2 w-28 h-8 flex pr-2"
               style={{
-                background: item === tag ? "#1890ff" : "#fff",
-                color: item === tag ? "#fff" : "#333",
+                backgroundColor: count.active
+                  ? "rgba(24, 144, 255, 1)"
+                  : "#FFF",
+                color: count.active ? "#FFF" : "#333",
               }}
-              key={item}
-              onClick={() => changeDate(item)}
-            >
-              {item}
-            </div>
+              // onClick={() =>
+              //   setAccount(
+              //     account.map((item, Index) => ({
+              //       ...item,
+              //       active: Index === index ? !item.active : item.active,
+              //     }))
+              //   )
+              // }
+              icon={
+                <div className=" flex items-center h-8 p-2 pb-4">
+                  <div className=" mr-1">
+                    <Tooltip title={count.address}>
+                      {formatCount(count.address as string)}
+                    </Tooltip>
+                  </div>
+                  <CloseOutlined
+                    className=" ml-1"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setAccount(
+                        account.filter((item, Index) => Index !== index)
+                      );
+                    }}
+                  />
+                </div>
+              }
+            ></Button>
           ))}
         </div>
-        <div>
-          <DatePicker.RangePicker
-            value={[moment(date[0]), moment(date[1])]}
-            onChange={(e: any) =>
-              setDate([
-                dayjs(e[0] as unknown as string).format("YYYY/MM/DD"),
-                dayjs(e[1] as unknown as string).format("YYYY/MM/DD"),
-              ])
-            }
-          />
+        <div className="justify-between mt-10 px-8 md:flex">
+          <div className=" flex items-center">
+            <div>Chart:</div>
+            <Select
+              options={chartOptions.map((item) => ({
+                ...item,
+                disabled: item.value === compareColum ? true : false,
+              }))}
+              className=" w-80 ml-2"
+              defaultValue={chartColum}
+              placeholder="Avg. Transaction Value"
+              onChange={(value) => setChartColum(value)}
+              style={{ width: "330px" }}
+            />
+          </div>
+          <div className=" flex  items-center">
+            <div>Compare with:</div>
+            <Select
+              allowClear
+              options={chartOptions.map((item) => ({
+                ...item,
+                disabled: item.value === chartColum ? true : false,
+              }))}
+              defaultValue={compareColum}
+              className=" w-80 ml-2"
+              style={{ width: "330px" }}
+              onChange={(value) => {
+                setCompareColum(value);
+              }}
+            />
+          </div>
         </div>
-      </div>
-      {chartColum && compareColum ? (
-        <DualAxes
-          data={data}
-          xField="date"
-          yField={["value", "count"]}
-          geometryOptions={[
-            {
-              geometry: "line",
-              seriesField: "type",
-              ...range,
-            },
-            {
-              geometry: "line",
-              seriesField: "type",
-              ...otherRange,
-            },
-          ]}
-          autoFit={true}
-          slider={{
-            start:0,
-            end:100
-          }}
-        />
-      ) : (
-        <Line {...config}></Line>
-      )}
-      <div className=" mt-10 ml-8 flex">
-        <AutoComplete
-          className=" w-40  mr-6"
-          allowClear
-          placeholder="Search"
-          options={[]}
-          onBlur={({ target }: { target: any }) => {
-            const value = target.value;
-            const values = counts.map(({ address }) => address);
-            if (!values.includes(value) && value) {
-              push({
-                pathname: "./chart",
-                query: {
-                  counts: JSON.stringify([
-                    ...counts,
-                    {
-                      address: target.value,
-                      id: counts.length,
-                      active: true,
-                    },
-                  ]),
-                },
-              });
-            }
-          }}
-        ></AutoComplete>
-        {counts.map((count, index) => (
-          <Button
-            key={count.id}
-            type="text"
-            className=" mr-2 w-28 h-8 flex pr-2"
-            style={{
-              backgroundColor: count.active ? "rgba(24, 144, 255, 1)" : "#FFF",
-              color: count.active ? "#FFF" : "#333",
-            }}
-            onClick={() =>
-              push({
-                pathname: "./chart",
-                query: {
-                  counts: JSON.stringify(
-                    counts.map((item, Index) => ({
-                      ...item,
-                      active: Index === index ? !item.active : item.active,
-                    }))
-                  ),
-                },
-              })
-            }
-            icon={
-              <div className=" flex items-center h-8 p-2 pb-4">
-                <div className=" mr-1">
-                  <Tooltip title={count.address}>
-                    {formatCount(count.address as string)}
-                  </Tooltip>
-                </div>
-                <CloseOutlined
-                  className=" ml-1"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    push({
-                      pathname: "./chart",
-                      query: {
-                        counts: JSON.stringify(
-                          counts.filter((item, Index) => Index !== index)
-                        ),
-                      },
-                    });
-                  }}
-                />
-              </div>
-            }
-          ></Button>
-        ))}
-      </div>
-      <div className="justify-between mt-10 px-8 md:flex">
-        <div className=" flex items-center">
-          <div>Chart:</div>
-          <Select
-            options={chartOptions.map((item) => ({
-              ...item,
-              disabled: item.value === compareColum ? true : false,
-            }))}
-            className=" w-80 ml-2"
-            defaultValue={chartColum}
-            placeholder="Avg. Transaction Value"
-            onChange={(value) => setChartColum(value)}
-            style={{ width: "330px" }}
-          />
-        </div>
-        <div className=" flex  items-center">
-          <div>Compare with:</div>
-          <Select
-            allowClear
-            options={chartOptions.map((item) => ({
-              ...item,
-              disabled: item.value === chartColum ? true : false,
-            }))}
-            defaultValue={compareColum}
-            className=" w-80 ml-2"
-            style={{ width: "330px" }}
-            onChange={(value) =>{setData([[],[]]);setCompareColum(value)}}
-          />
-        </div>
-      </div>
+      </Spin>
     </div>
   );
 };
-export async function getServerSideProps(context: any) {
-  const counts = JSON.parse(
-    context.query.counts ||
-      '[{"address": "0xceb69f6342ece283b2f5c9088ff249b5d0ae66ea","active":true,"id":1}]'
-  );
-  try {
-    const data = await Promise.all(
-      counts
-        .filter(({ active }: { active: boolean }) => active === true)
-        .map(({ address }: { address: string }) =>
-          request({
-            url: `/history`,
-            params: { address },
-            method: "GET",
-          })
-        )
-    );
-    return {
-      props: {
-        dataSource: data.map(({ result }) => result),
-        counts,
-      },
-    };
-  } catch (error) {
-    return {
-      dataSource: { data: [], counts: [] },
-    };
-  }
-}
 export default Home;

@@ -1,7 +1,6 @@
 import type { NextPage } from "next";
 import { Button, DatePicker, Select, Spin } from "antd";
 import { useState, useEffect } from "react";
-import { Line } from "@ant-design/plots";
 import dayjs from "dayjs";
 import moment from "moment";
 const BaseURL = "http://43.129.181.196";
@@ -341,7 +340,6 @@ const Home: NextPage = () => {
             />
           </div>
         </div>
-        <Line {...config}></Line>
         <div className=" mt-8 ml-8">
           <Button
             type="text"
