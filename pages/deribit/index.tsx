@@ -18,12 +18,32 @@ const Home = () => {
       setLoading(true);
       var chartDom = plot.current as unknown as HTMLElement;
       var myChart = echarts.init(chartDom);
-      const { data: dataSource } = await axios({
-        url: "/api/deribit",
-        params: {
-          start_time: dayjs(date[0]).format("YYYY-MM-DD/HH:mm"),
-        },
-      });
+      const start_time = dayjs(date[0]).format("YYYY-MM-DD/HH:mm");
+      const url = "/api/deribit";
+       let dataSource:any[] = await Promise.all([
+        axios({
+          url,
+          params: {
+            start_time,
+            func: "openinterest",
+          },
+        }),
+        axios({
+          url,
+          params: {
+            start_time,
+            func: "24hrvolume",
+          },
+        }),
+        axios({
+          url,
+          params: {
+            start_time,
+            func: "price_btceth",
+          },
+        }),
+      ]);
+      dataSource=dataSource.map(({data})=>data)
       setLoading(false);
       //所有数据
       let [data, data1, data2] = dataSource;
