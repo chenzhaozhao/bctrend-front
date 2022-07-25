@@ -198,8 +198,19 @@ const Home = () => {
             type: "slider",
             show: true,
             xAxisIndex: [0],
+            yAxisIndex:[0,1],
             start: 0, // 滚动条的起始位置（10%）
             end: 100, // 滚动条的
+            filterMode:"filter"
+          },
+          {
+            type: "inside",
+            show: true,
+            xAxisIndex: [0],
+            yAxisIndex:[0,1],
+            start: 0, // 滚动条的起始位置（10%）
+            end: 100, // 滚动条的
+            filterMode:"filter"
           },
         ],
         grid: {
@@ -245,7 +256,10 @@ const Home = () => {
           now,
         ]);
       default:
-        return;
+        return  setDate([
+          dayjs().subtract(2, "years").format("YYYY/MM/DD"),
+          now,
+        ]);;
     }
   };
   return (

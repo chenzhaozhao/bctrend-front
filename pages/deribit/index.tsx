@@ -48,48 +48,42 @@ const Home = () => {
       //所有数据
       let [data, data1, data2] = dataSource;
       // x轴上时间集合
-      const times: string[] = Array.from(
-        new Set(
-          dataSource
-            .flat()
-            .map(({ time }: { time: string }) =>
-              dayjs(time).format("YYYY-MM-DD HH:mm")
-            )
-            .filter(
-              (time: string) => Number(dayjs(time).format("mm")) % 15 === 0
-            )
-            .sort(sortRule)
-        )
-      );
-      const dealData = (times: string[], data: any[], key: string) => {
-        return times.map((time) => {
-          const raTime: string[] = data
-            .map(({ time, ratio }: { time: string; ratio: string }) => ({
-              time: dayjs(time).format("YYYY-MM-DD HH:mm"),
-              ratio,
-            }))
-            .map(({ time }: { time: string }) => time);
-          const Index = raTime.indexOf(time as string);
-          let value: number = null as unknown as number;
-          if (Index >= 0) {
-            value = parseFloat(data[Index][key] || "");
-          }
-          return value;
-        });
-      };
-      const ratio = dealData(times, data, "ratio");
-      const ratio1 = dealData(times, data1, "ratio1");
-      const ratio2 = dealData(times, data1, "ratio2");
-      const btc = dealData(times, data2, "btc");
+      let times:string[]=[]
+      for(let i=0;i<data.times.length;i++){
+        if(data1.times.includes(data.times[i]) &&data2.times.includes(data.times[i])){
+          times.push(data.times[i])
+        }
+      }
+      times=Array.from(new Set(times.sort(sortRule)));
+      // const dealData = (times: string[], data: any[], key: string) => {
+      //   return times.map((time) => {
+      //     const raTime: string[] = data
+      //       .map(({ time, ratio }: { time: string; ratio: string }) => ({
+      //         time: dayjs(time).format("YYYY-MM-DD HH:mm"),
+      //         ratio,
+      //       }))
+      //       .map(({ time }: { time: string }) => time);
+      //     const Index = raTime.indexOf(time as string);
+      //     let value: number = null as unknown as number;
+      //     if (Index >= 0) {
+      //       value = parseFloat(data[Index][key] || "");
+      //     }
+      //     return value;
+      //   });
+      // };
+      const {ratio} = data;
+      const {ratio1,ratio2} = data1;
+      const {btc} = data2;
+     
       var option;
       const ratioMin = Math.min(
         ...[...ratio, ...ratio1, ...ratio2].filter((num) => num)
       );
-      const priceMin = Math.min(...btc.filter((num) => num));
+      const priceMin = Math.min(...btc.filter((num:number) => num));
       const ratioMax = Math.max(
         ...[...ratio, ...ratio1, ...ratio2].filter((num) => num)
       );
-      const priceMax = Math.max(...btc.filter((num) => num));
+      const priceMax = Math.max(...btc.filter((num:number) => num));
       option = {
         title: {
           text: "Long to Short Ratio",
@@ -108,8 +102,19 @@ const Home = () => {
             type: "slider",
             show: true,
             xAxisIndex: [0],
+            yAxisIndex:[0,1],
             start: 0, // 滚动条的起始位置（10%）
             end: 100, // 滚动条的
+            filterMode:"filter"
+          },
+          {
+            type: "inside",
+            show: true,
+            xAxisIndex: [0],
+            yAxisIndex:[0,1],
+            start: 0, // 滚动条的起始位置（10%）
+            end: 100, // 滚动条的
+            filterMode:"filter"
           },
         ],
         grid: {
@@ -217,7 +222,10 @@ const Home = () => {
           now,
         ]);
       default:
-        return;
+        return  setDate([
+          dayjs().subtract(2, "years").format("YYYY/MM/DD"),
+          now,
+        ]);;
     }
   };
   return (
