@@ -9,7 +9,7 @@ export default async function handler(req: any, res: any) {
         // 24hrvolume
         // price_btceth
         //数据过滤 15分钟
-        data = data.result.filter(({ time }: { time: string }) => Number(dayjs(time).format("mm")) % 15 === 0).map((item: any) => ({ ...item, time: dayjs(item.time).format('YYYY-MM-DD HH:mm') }));
+        data = data.result.filter(({ time }: { time: string }) => Number(dayjs(time).format("mm")) % 30 === 0).map((item: any) => ({ ...item, time: dayjs(item.time).format('YYYY-MM-DD HH:mm') }));
         let result: { [key: string]: any } = {}
         if (func === "openinterest") {
             result.times = data.map(({ time }: { time: string }) => time);
