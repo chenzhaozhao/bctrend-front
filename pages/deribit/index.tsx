@@ -102,19 +102,19 @@ const Home = () => {
             type: "slider",
             show: true,
             xAxisIndex: [0],
-            yAxisIndex:[0,1],
+            yAxisIndex:[0],
             start: 0, // 滚动条的起始位置（10%）
             end: 100, // 滚动条的
-            filterMode:"filter"
+            filterMode:"none"
           },
           {
             type: "inside",
             show: true,
             xAxisIndex: [0],
-            yAxisIndex:[0,1],
+            yAxisIndex:[0],
             start: 0, // 滚动条的起始位置（10%）
             end: 100, // 滚动条的
-            filterMode:"filter"
+            filterMode:"none"
           },
         ],
         grid: {
